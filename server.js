@@ -75,21 +75,21 @@ app.get("/audit", async (req, res) => {
   if (isHttps) score += 10;
   if (title) score += 10;
 
-  res.json({
-    title,
-    description,
-    h1,
-    h1Count: h1List.length,
-    imagesWithoutAlt,
-    internalLinks,
-    canonical,
-    hasRobots,
-    hasSitemap,
-    isHttps,
-    titleLength,
-    descLength,
-    score
-  });
+res.json({
+  title,
+  description,
+  h1,
+  h1Count: h1List.length,
+  imagesWithoutAlt,
+  internalLinks,
+  canonical,
+  hasRobots,
+  hasSitemap,
+  isHttps,
+  titleLength,
+  descLength,
+  score
+});
 
 } catch (err) {
   res.status(500).json({ error: "Ошибка анализа сайта" });
