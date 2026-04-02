@@ -24,13 +24,10 @@ app.get("/audit", async (req, res) => {
 
     const $ = cheerio.load(data);
 
-    // SEO
     const title = $("title").text();
     const description = $('meta[name="description"]').attr("content");
-
     const h1List = $("h1");
     const h1 = h1List.first().text();
-
     const canonical = $('link[rel="canonical"]').attr("href");
 
     let imagesWithoutAlt = 0;
@@ -38,76 +35,51 @@ app.get("/audit", async (req, res) => {
       if (!$(el).attr("alt")) imagesWithoutAlt++;
     });
 
-    let internalLinks = 0;
-    $("a").each((i, el) => {
-      const href = $(el).attr("href");
-      if (href && href.startsWith("/")) internalLinks++;
-    });
-
     let hasRobots = false;
-    try {
-      await axios.get(url + "/robots.txt");
-      hasRobots = true;
-    } catch {}
+    try { await axios.get(url + "/robots.txt"); hasRobots = true; } catch {}
 
     let hasSitemap = false;
-    try {
-      await axios.get(url + "/sitemap.xml");
-      hasSitemap = true;
-    } catch {}
+    try { await axios.get(url + "/sitemap.xml"); hasSitemap = true; } catch {}
 
     const isHttps = url.startsWith("https");
 
-    const titleLength = title.length;
-    const descLength = description ? description.length : 0;
-
     let score = 0;
-
-    if (title && titleLength >= 10 && titleLength <= 60) score += 10;
-    if (description && descLength >= 50 && descLength <= 160) score += 10;
+    if (title) score += 10;
+    if (description) score += 10;
     if (h1List.length === 1) score += 10;
     if (imagesWithoutAlt === 0) score += 10;
     if (canonical) score += 10;
-    if (internalLinks > 0) score += 10;
     if (hasRobots) score += 10;
     if (hasSitemap) score += 10;
     if (isHttps) score += 10;
-    if (title) score += 10;
 
-   // 🚀 PageSpeed (mobile + desktop)
-let pageSpeedMobile = null;
-let pageSpeedDesktop = null;
-let loadTimeMobile = null;
-let loadTimeDesktop = null;
+    const apiKey = "YOUR_API_KEY";
 
-try {
-  const apiKey = process.env.API_KEY;
+    async function getPSI(strategy) {
+      try {
+        const res = await axios.get(
+          `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&strategy=${strategy}&key=${apiKey}`
+        );
 
-  const mobile = await axios.get(
-    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&strategy=mobile&key=${apiKey}`
-  );
+        const data = res.data.lighthouseResult;
 
-  const desktop = await axios.get(
-    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&strategy=desktop&key=${apiKey}`
-  );
+        return {
+          score: Math.round(data.categories.performance.score * 100),
+          lcp: data.audits["largest-contentful-paint"].displayValue,
+          cls: data.audits["cumulative-layout-shift"].displayValue
+        };
+      } catch {
+        return null;
+      }
+    }
 
-  pageSpeedMobile = Math.round(
-    mobile.data.lighthouseResult.categories.performance.score * 100
-  );
+    const mobile = await getPSI("mobile");
+    const desktop = await getPSI("desktop");
 
-  pageSpeedDesktop = Math.round(
-    desktop.data.lighthouseResult.categories.performance.score * 100
-  );
-
-  loadTimeMobile =
-    mobile.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
-
-  loadTimeDesktop =
-    desktop.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
-
-} catch (e) {
-  console.log("PageSpeed error");
-}
+    function compare(score) {
+      if (!score) return null;
+      return Math.min(99, Math.max(1, score));
+    }
 
     res.json({
       title,
@@ -115,18 +87,19 @@ try {
       h1,
       h1Count: h1List.length,
       imagesWithoutAlt,
-      internalLinks,
       canonical,
       hasRobots,
       hasSitemap,
       isHttps,
-      titleLength,
-      descLength,
       score,
-      pageSpeedMobile,
-      pageSpeedDesktop,
-      loadTimeMobile,
-      loadTimeDesktop
+      pageSpeedMobile: mobile?.score,
+      pageSpeedDesktop: desktop?.score,
+      lcpMobile: mobile?.lcp,
+      clsMobile: mobile?.cls,
+      lcpDesktop: desktop?.lcp,
+      clsDesktop: desktop?.cls,
+      fasterThanMobile: compare(mobile?.score),
+      fasterThanDesktop: compare(desktop?.score)
     });
 
   } catch (err) {
