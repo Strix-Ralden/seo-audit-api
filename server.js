@@ -21,25 +21,10 @@ app.get("/audit", async (req, res) => {
     const { data } = await axios.get(url, {
       headers: { "User-Agent": "Mozilla/5.0" }
     });
-    
-  const apiKey = "AIzaSyACfhZTZuPp4_BJ6UfjI7R4uzJIcDhrNt0";
 
-  const psi = await axios.get(
-    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&key=${apiKey}`
-  );
-
-  pageSpeedScore = Math.round(
-    psi.data.lighthouseResult.categories.performance.score * 100
-  );
-
-  loadTime =
-    psi.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
-
-} catch (e) {
-  console.log("PageSpeed error");
-    
     const $ = cheerio.load(data);
 
+    // SEO
     const title = $("title").text();
     const description = $('meta[name="description"]').attr("content");
 
@@ -88,6 +73,28 @@ app.get("/audit", async (req, res) => {
     if (hasSitemap) score += 10;
     if (isHttps) score += 10;
     if (title) score += 10;
+
+    // 🚀 PageSpeed (ОТДЕЛЬНЫЙ try)
+    let pageSpeedScore = null;
+    let loadTime = null;
+
+    try {
+      const apiKey = process.env.API_KEY;
+
+      const psi = await axios.get(
+        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&key=${apiKey}`
+      );
+
+      pageSpeedScore = Math.round(
+        psi.data.lighthouseResult.categories.performance.score * 100
+      );
+
+      loadTime =
+        psi.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
+
+    } catch (e) {
+      console.log("PageSpeed error");
+    }
 
     res.json({
       title,
