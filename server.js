@@ -22,10 +22,10 @@ app.get("/audit", async (req, res) => {
       headers: { "User-Agent": "Mozilla/5.0" }
     });
     
-  const apiKey = "ТВОЙ_API_KEY";
+  const apiKey = "AIzaSyACfhZTZuPp4_BJ6UfjI7R4uzJIcDhrNt0";
 
   const psi = await axios.get(
-    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&key=${AIzaSyACfhZTZuPp4_BJ6UfjI7R4uzJIcDhrNt0}`
+    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&key=${apiKey}`
   );
 
   pageSpeedScore = Math.round(
