@@ -102,7 +102,9 @@ app.get("/audit", async (req, res) => {
       isHttps,
       titleLength,
       descLength,
-      score
+      score,
+      pageSpeedScore,
+      loadTime
     });
 
   } catch (err) {
