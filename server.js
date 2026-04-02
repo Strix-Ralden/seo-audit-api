@@ -74,27 +74,40 @@ app.get("/audit", async (req, res) => {
     if (isHttps) score += 10;
     if (title) score += 10;
 
-    // 🚀 PageSpeed (ОТДЕЛЬНЫЙ try)
-    let pageSpeedScore = null;
-    let loadTime = null;
+   // 🚀 PageSpeed (mobile + desktop)
+let pageSpeedMobile = null;
+let pageSpeedDesktop = null;
+let loadTimeMobile = null;
+let loadTimeDesktop = null;
 
-    try {
-      const apiKey = process.env.API_KEY;
+try {
+  const apiKey = process.env.API_KEY;
 
-      const psi = await axios.get(
-        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&key=${apiKey}`
-      );
+  const mobile = await axios.get(
+    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&strategy=mobile&key=${apiKey}`
+  );
 
-      pageSpeedScore = Math.round(
-        psi.data.lighthouseResult.categories.performance.score * 100
-      );
+  const desktop = await axios.get(
+    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&strategy=desktop&key=${apiKey}`
+  );
 
-      loadTime =
-        psi.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
+  pageSpeedMobile = Math.round(
+    mobile.data.lighthouseResult.categories.performance.score * 100
+  );
 
-    } catch (e) {
-      console.log("PageSpeed error");
-    }
+  pageSpeedDesktop = Math.round(
+    desktop.data.lighthouseResult.categories.performance.score * 100
+  );
+
+  loadTimeMobile =
+    mobile.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
+
+  loadTimeDesktop =
+    desktop.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
+
+} catch (e) {
+  console.log("PageSpeed error");
+}
 
     res.json({
       title,
@@ -110,8 +123,10 @@ app.get("/audit", async (req, res) => {
       titleLength,
       descLength,
       score,
-      pageSpeedScore,
-      loadTime
+      pageSpeedMobile,
+      pageSpeedDesktop,
+      loadTimeMobile,
+      loadTimeDesktop
     });
 
   } catch (err) {
