@@ -21,7 +21,23 @@ app.get("/audit", async (req, res) => {
     const { data } = await axios.get(url, {
       headers: { "User-Agent": "Mozilla/5.0" }
     });
+    
+  const apiKey = "ТВОЙ_API_KEY";
 
+  const psi = await axios.get(
+    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${url}&key=${AIzaSyACfhZTZuPp4_BJ6UfjI7R4uzJIcDhrNt0}`
+  );
+
+  pageSpeedScore = Math.round(
+    psi.data.lighthouseResult.categories.performance.score * 100
+  );
+
+  loadTime =
+    psi.data.lighthouseResult.audits["largest-contentful-paint"].displayValue;
+
+} catch (e) {
+  console.log("PageSpeed error");
+    
     const $ = cheerio.load(data);
 
     const title = $("title").text();
